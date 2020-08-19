@@ -116,9 +116,14 @@ void rng_advancestate(rng_stream* s, const long e, const long c);
 inline static void rng_getstate(rng_stream* s, uint32_t* const seed){memcpy(seed,s->Cg,6*sizeof(uint32_t));}
 void rng_writestate(rng_stream* s);
 void rng_writestatefull(rng_stream* s);
+
+//This function returns a uniform deviate in the interval [0,m1-1]. The original
+//U01 function was returning a uniform deviate in the interval [1,m1], before
+//multiplying by norm equal to 1/(m1+1), so U01 was returning a value in the
+//interval ]0,1[. 
 inline static uint32_t rng_rand32weak(rng_stream* s)
 {
-  int64_t r=s->Cg[2]-s->Cg[5];
+  int64_t r=(int64_t)s->Cg[2]-s->Cg[5];
   r-=m1*(r>>63);
 
   //printf("%16f %16f %16f %16f %16f %16f\n",(double)Cg[0],(double)Cg[1],(double)Cg[2],(double)Cg[3],(double)Cg[4],(double)Cg[5]);
