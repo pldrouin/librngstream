@@ -35,7 +35,7 @@ void rng_init(rng_stream *s)
 }
 
 //-------------------------------------------------------------------------
-bool rng_setseed(rng_stream* s, uint32_t const* const seed)
+bool rng_setseed(rng_stream* s, uint64_t const* const seed)
 {
   if (rng_checkseed (seed)) return false; // FAILURE     
   int i;
@@ -85,8 +85,8 @@ void rng_writestate(rng_stream* s)
   printf("The current state of the Rngstream:\n   Cg = { ");
   int i;
 
-  for (i = 0; i < 5; i++) printf("%" PRIu32 ", ",s->Cg[i]);
-  printf("%" PRIu32 " }\n\n",s->Cg[5]);
+  for (i = 0; i < 5; i++) printf("%" PRIu64 ", ",s->Cg[i]);
+  printf("%" PRIu64 " }\n\n",s->Cg[5]);
 }
 
 
@@ -97,43 +97,43 @@ void rng_writestatefull(rng_stream* s)
 
   printf("The RNGStream   Ig = { ");
 
-  for (i = 0; i < 5; i++) printf("%" PRIu32 ", ",s->Ig[i]);
-  printf("%" PRIu32 " }\n",s->Ig[5]);
+  for (i = 0; i < 5; i++) printf("%" PRIu64 ", ",s->Ig[i]);
+  printf("%" PRIu64 " }\n",s->Ig[5]);
 
   printf("   Bg = { ");
-  for (i = 0; i < 5; i++) printf("%" PRIu32 ", ",s->Bg[i]);
-  printf("%" PRIu32 " }\n",s->Bg[5]);
+  for (i = 0; i < 5; i++) printf("%" PRIu64 ", ",s->Bg[i]);
+  printf("%" PRIu64 " }\n",s->Bg[5]);
 
   printf("   Cg = { ");
-  for (i = 0; i < 5; i++) printf("%" PRIu32 ", ",s->Cg[i]);
-  printf("%" PRIu32 " }\n\n",s->Cg[5]);
+  for (i = 0; i < 5; i++) printf("%" PRIu64 ", ",s->Cg[i]);
+  printf("%" PRIu64 " }\n\n",s->Cg[5]);
 }
 
 //-------------------------------------------------------------------------
 // Compute the vector v = A*s MOD m. Assume that -m < s[i] < m.
 // Works also when v = s.
 //
-void rng_matvecmodm (const int64_t A[3][3], uint32_t const* const s, uint32_t* const v, const uint32_t m)
+void rng_matvecmodm (const int64_t A[3][3], uint64_t const* const s, uint64_t* const v, const uint64_t m)
 {
   int i;
-  uint32_t x[3];               // Necessary if v = s
+  uint64_t x[3];               // Necessary if v = s
 
   for (i = 2; i >=0; --i) {
     x[i] = rng_multmodm (A[i][0], s[0], 0, m);
     x[i] = rng_multmodm (A[i][1], s[1], x[i], m);
     x[i] = rng_multmodm (A[i][2], s[2], x[i], m);
   }
-  memcpy(v,x,3*sizeof(uint32_t));
+  memcpy(v,x,3*sizeof(uint64_t));
 }
 
 //-------------------------------------------------------------------------
 // Compute the vector v = A*s MOD m. Assume that -m < s[i] < m.
 // Works also when v = s.
 //
-void rng_matvecmodmll (const int64_t A[3][3], int64_t const* const s, int64_t* const v, const uint32_t m)
+void rng_matvecmodmll (const int64_t A[3][3], int64_t const* const s, int64_t* const v, const uint64_t m)
 {
     int i;
-    uint32_t x[3];               // Necessary if v = s
+    uint64_t x[3];               // Necessary if v = s
 
     for (i = 2; i >=0; --i) {
         x[i] = rng_multmodm(A[i][0], s[0], 0, m);
@@ -146,7 +146,7 @@ void rng_matvecmodmll (const int64_t A[3][3], int64_t const* const s, int64_t* c
 //-------------------------------------------------------------------------
 // Return (a*s + c) MOD m; a, s, c and m must be < 2^35
 //
-uint32_t rng_multmodm (int64_t a, const int64_t s, const uint32_t c, const uint32_t m)
+uint64_t rng_multmodm (int64_t a, const int64_t s, const uint64_t c, const uint64_t m)
 {
   double v;
   long a1;
@@ -162,14 +162,14 @@ uint32_t rng_multmodm (int64_t a, const int64_t s, const uint32_t c, const uint3
 
   a1 = (long)(v / m);
   /* in case v < 0)*/
-  if ((v -= a1 * m) < 0.0) return v += m;   else return (uint32_t)v;
+  if ((v -= a1 * m) < 0.0) return v += m;   else return (uint64_t)v;
 }
 
 //-------------------------------------------------------------------------
 // Compute the matrix C = A*B MOD m. Assume that -m < s[i] < m.
 // Note: works also if A = C or B = C or A = B = C.
 //
-void rng_matmatmodm (const int64_t A[3][3], const int64_t B[3][3], int64_t C[3][3], const uint32_t m)
+void rng_matmatmodm (const int64_t A[3][3], const int64_t B[3][3], int64_t C[3][3], const uint64_t m)
 {
   int i, j;
   int64_t V[3], W[3][3];
@@ -187,7 +187,7 @@ void rng_matmatmodm (const int64_t A[3][3], const int64_t B[3][3], int64_t C[3][
 //-------------------------------------------------------------------------
 // Compute the matrix B = (A^(2^e) Mod m);  works also if A = B. 
 //
-void rng_mattwopowmodm (const int64_t A[3][3], int64_t B[3][3], const uint32_t m, const long e)
+void rng_mattwopowmodm (const int64_t A[3][3], int64_t B[3][3], const uint64_t m, const long e)
 {
   long i;
 
@@ -202,7 +202,7 @@ void rng_mattwopowmodm (const int64_t A[3][3], int64_t B[3][3], const uint32_t m
 //-------------------------------------------------------------------------
 // Compute the matrix B = (A^n Mod m);  works even if A = B.
 //
-void rng_matpowmodm (const int64_t A[3][3], int64_t B[3][3], const uint32_t m, long n)
+void rng_matpowmodm (const int64_t A[3][3], int64_t B[3][3], const uint64_t m, long n)
 {
   int j;
   int64_t W[3][3];
@@ -225,7 +225,7 @@ void rng_matpowmodm (const int64_t A[3][3], int64_t B[3][3], const uint32_t m, l
 // Check that the seeds are legitimate values. Returns 0 if legal seeds,
 // -1 otherwise.
 //
-int rng_checkseed (const uint32_t seed[6])
+int rng_checkseed (const uint64_t seed[6])
 {
   int i;
 

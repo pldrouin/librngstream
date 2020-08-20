@@ -15,16 +15,16 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-static const int64_t m1   =       4294967087;
-static const int64_t m2   =       4294944443;
-static const int64_t a12  =       1403580;
-static const int64_t a13n =       810728;
-static const int64_t a21  =       527612;
-static const int64_t a23n =       1370589;
-static const int64_t corr1 =	   (m1 * a13n);
-static const int64_t corr2 =	   (m2 * a23n);
-static const int64_t two17 =      131072;
-static const double two53 =      9007199254740992.0;
+#define m1   UINT64_C(4294967087)
+#define m2   UINT64_C(4294944443)
+#define a12  UINT64_C(1403580)
+#define a13n UINT64_C(810728)
+#define a21  UINT64_C(527612)
+#define a23n UINT64_C(1370589)
+#define corr1 UINT64_C(3482050076509336) //m1 * a13n
+#define corr2 UINT64_C(5886603609186927) //(m2 * a23n
+#define two17 UINT64_C(131072)
+#define two53 UINT64_C(9007199254740992)
 
 // The following are the transition matrices of the two MRG components
 // (in matrix form), raised to the powers -1, 1, 2^76, and 2^127, resp.
@@ -81,35 +81,35 @@ static const int64_t A2p127[3][3] = {
 // The default seed of the package; will be the seed of the first
 // declared RNGStream, unless SetPackageSeed is called.
 //
-static uint32_t rng_nextseed[6] =
+static uint64_t rng_nextseed[6] =
 {
    12345, 12345, 12345, 12345, 12345, 12345
 };
 
 typedef struct
 {
-	uint32_t Cg[6], Bg[6], Ig[6];
+	uint64_t Cg[6], Bg[6], Ig[6];  //!< Values can fit in uint32_t, but using uint64_t for faster processing speed on 64bit CPUs
 	uint32_t fill;
 	uint8_t favail;
 } rng_stream;
 
-uint32_t rng_multmodm (int64_t a, const int64_t s, const uint32_t c, const uint32_t m);
-void rng_matvecmodm (const int64_t A[3][3], uint32_t const* const s, uint32_t* const v, const uint32_t m);
-void rng_matvecmodmll (const int64_t A[3][3], int64_t const* const s, int64_t* const v, const uint32_t m);
-void rng_matmatmodm (const int64_t A[3][3], const int64_t B[3][3], int64_t C[3][3], const uint32_t m);
-void rng_mattwopowmodm (const int64_t A[3][3], int64_t B[3][3], const uint32_t m, const long e);
-void rng_matpowmodm (const int64_t A[3][3], int64_t B[3][3], const uint32_t m, long n);
-int rng_checkseed (const uint32_t seed[6]);
+uint64_t rng_multmodm (int64_t a, const int64_t s, const uint64_t c, const uint64_t m);
+void rng_matvecmodm (const int64_t A[3][3], uint64_t const* const s, uint64_t* const v, const uint64_t m);
+void rng_matvecmodmll (const int64_t A[3][3], int64_t const* const s, int64_t* const v, const uint64_t m);
+void rng_matmatmodm (const int64_t A[3][3], const int64_t B[3][3], int64_t C[3][3], const uint64_t m);
+void rng_mattwopowmodm (const int64_t A[3][3], int64_t B[3][3], const uint64_t m, const long e);
+void rng_matpowmodm (const int64_t A[3][3], int64_t B[3][3], const uint64_t m, long n);
+int rng_checkseed (const uint64_t seed[6]);
 
 void rng_init(rng_stream* s);
-bool rng_setseed(rng_stream* s, uint32_t const* const seed);
-inline static void rng_advanceseed(uint32_t const* seedin, uint32_t* seedout){rng_matvecmodm (A1p127,seedin,seedout,m1); rng_matvecmodm (A2p127,&seedin[3],&seedout[3],m2);}
-inline static bool rng_setpackageseed(uint32_t const* const seed){if(rng_checkseed(seed)) return false; memcpy(rng_nextseed,seed,6*sizeof(uint32_t)); return true;}
+bool rng_setseed(rng_stream* s, uint64_t const* const seed); //!< Values can fit in uint32_t, but using uint64_t for faster processing speed on 64bit CPUs
+inline static void rng_advanceseed(uint64_t const* seedin, uint64_t* seedout){rng_matvecmodm (A1p127,seedin,seedout,m1); rng_matvecmodm (A2p127,&seedin[3],&seedout[3],m2);}
+inline static bool rng_setpackageseed(uint64_t const* const seed){if(rng_checkseed(seed)) return false; memcpy(rng_nextseed,seed,6*sizeof(uint64_t)); return true;} //!< Values can fit in uint32_t, but using uint64_t for faster processing speed on 64bit CPUs
 inline static void rng_resetstartstream(rng_stream* s){int i; for(i = 5; i >=0; --i) s->Cg[i] = s->Bg[i] = s->Ig[i];}
-inline static void rng_resetstartsubstream(rng_stream* s){memcpy(s->Cg,s->Bg,6*sizeof(uint32_t));}
-inline static void rng_resetnextsubstream(rng_stream* s){rng_matvecmodm(A1p76, s->Bg, s->Bg, m1); rng_matvecmodm(A2p76, s->Bg+3, s->Bg+3, m2); memcpy(s->Cg,s->Bg,6*sizeof(uint32_t));}
+inline static void rng_resetstartsubstream(rng_stream* s){memcpy(s->Cg,s->Bg,6*sizeof(uint64_t));}
+inline static void rng_resetnextsubstream(rng_stream* s){rng_matvecmodm(A1p76, s->Bg, s->Bg, m1); rng_matvecmodm(A2p76, s->Bg+3, s->Bg+3, m2); memcpy(s->Cg,s->Bg,6*sizeof(uint64_t));}
 void rng_advancestate(rng_stream* s, const long e, const long c);
-inline static void rng_getstate(rng_stream* s, uint32_t* const seed){memcpy(seed,s->Cg,6*sizeof(uint32_t));}
+inline static void rng_getstate(rng_stream* s, uint64_t* const seed){memcpy(seed,s->Cg,6*sizeof(uint64_t));}
 void rng_writestate(rng_stream* s);
 void rng_writestatefull(rng_stream* s);
 
@@ -119,12 +119,12 @@ void rng_writestatefull(rng_stream* s);
  * This function returns a uniform deviate in the interval [0,m1-1]. The original
  * U01 function was returning a uniform deviate in the interval [1,m1], before
  * multiplying by norm equal to 1/(m1+1), so U01 was returning a value in the
- * interval ]0,1[. 
+ * interval ]0,1). 
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,m1-1].
  */
-inline static uint32_t rng_rand_m1(rng_stream* s)
+inline static uint64_t rng_rand_m1(rng_stream* s)
 {
   int64_t r=(int64_t)s->Cg[2]-s->Cg[5];
   r-=m1*(r>>63);
@@ -132,14 +132,14 @@ inline static uint32_t rng_rand_m1(rng_stream* s)
   //printf("%16f %16f %16f %16f %16f %16f\n",(double)Cg[0],(double)Cg[1],(double)Cg[2],(double)Cg[3],(double)Cg[4],(double)Cg[5]);
 
   /* Component 1 */
-  uint32_t p=(uint32_t)((a12 * s->Cg[1] - a13n * s->Cg[0] + corr1)%m1);
+  uint64_t p=(a12 * s->Cg[1] - a13n * s->Cg[0] + corr1)%m1;
 
   s->Cg[0]=s->Cg[1];
   s->Cg[1]=s->Cg[2];
   s->Cg[2]=p;
 
   /* Component 2 */
-  p=(uint32_t)((a21 * s->Cg[5] - a23n * s->Cg[3] + corr2)%m2);
+  p=(a21 * s->Cg[5] - a23n * s->Cg[3] + corr2)%m2;
 
   s->Cg[3]=s->Cg[4];
   s->Cg[4]=s->Cg[5];
@@ -167,9 +167,9 @@ inline static uint32_t rng_rand24(rng_stream *s){return rng_rand_m1(s)>>8;}
  * This function returns a uniform deviate in the interval [0,72057590531489791].
  *
  * @param s: Handle to rng_stream.
- * @return uniform deviate in the interval [0,72057590531489791]].
+ * @return uniform deviate in the interval [0,72057590531489791].
  */
-inline static uint64_t rng_rand_m1_24(rng_stream *s){return (((uint64_t)rng_rand_m1(s))<<24)|(rng_rand_m1(s)>>8);}
+inline static uint64_t rng_rand_m1_24(rng_stream *s){return (rng_rand_m1(s)<<24)|(rng_rand_m1(s)>>8);}
 
 /**
  * @brief Uniform deviate in the interval [0,2^32-1].
@@ -221,6 +221,28 @@ inline static uint64_t rng_rand64(rng_stream *s){
   s->favail-=2;
   return ret;
 }
+
+/**
+ * @brief Uniform deviate in the interval [0,1), with a non-rounded minimum spacing of 1/4294967087.
+ *
+ * This function returns a uniform deviate in the interval [0,1). The minimal
+ * non-rounded spacing between two distinct values is 1/4294967087.
+ *
+ * @param s: Handle to rng_stream.
+ * @return uniform deviate in the interval [0,1).
+ */
+inline static double rng_rand_u01(rng_stream *s){return rng_rand_m1(s)*0x1.000000d10000bp-32;}
+
+/**
+ * @brief Uniform deviate in the interval [0,1), with a non-rounded minimum spacing of 1/72057590531489792.
+ *
+ * This function returns a uniform deviate in the interval [0,1). The minimal
+ * non-rounded spacing between two distinct values is 1/72057590531489792.
+ *
+ * @param s: Handle to rng_stream.
+ * @return uniform deviate in the interval [0,1).
+ */
+inline static double rng_rand_u01d(rng_stream *s){return rng_rand_m1_24(s)*0x1.000000d10000bp-56;}
 
 #endif
 
