@@ -1,14 +1,10 @@
-/***********************************************************************\
- *
- * Original implementation:      Pierre L'Ecuyer, University of Montreal
- *
-\***********************************************************************/
-
-//Modified by Pierre-Luc Drouin (pldrouin@pldrouin.net) in February 2012:
-//-Created rng_rand24, that generates true 24 bit pseudo random unsigned integers.
-//-Now using more inline functions for increased performance.
-//-Now using 64 bit integers instead of double precision variables for
-// increased performance on 64 bit CPUs.
+/**
+ * @file rngstream.h
+ * @brief Optimised C implementation of the RNG Stream algorithm.
+ * @author <Pierre-Luc.Drouin@drdc-rddc.gc.ca>, Defence Research and Development Canada Ottawa Research Centre.
+ * Original public domain algorithm and implementation from Pierre L'Ecuyer, University of
+ * Montreal. Also based on public domain optimised implementation of MRG32k3a by Sebastiano Vigna (vigna@acm.org).
+ */
 
 #ifndef RNGSTREAM_H
 #define RNGSTREAM_H
@@ -117,11 +113,18 @@ inline static void rng_getstate(rng_stream* s, uint32_t* const seed){memcpy(seed
 void rng_writestate(rng_stream* s);
 void rng_writestatefull(rng_stream* s);
 
-//This function returns a uniform deviate in the interval [0,m1-1]. The original
-//U01 function was returning a uniform deviate in the interval [1,m1], before
-//multiplying by norm equal to 1/(m1+1), so U01 was returning a value in the
-//interval ]0,1[. 
-inline static uint32_t rng_rand32weak(rng_stream* s)
+/**
+ * @brief Uniform deviate in the interval [0,m1-1], with m1=4294967087.
+ *
+ * This function returns a uniform deviate in the interval [0,m1-1]. The original
+ * U01 function was returning a uniform deviate in the interval [1,m1], before
+ * multiplying by norm equal to 1/(m1+1), so U01 was returning a value in the
+ * interval ]0,1[. 
+ *
+ * @param s: Handle to rng_stream.
+ * @return uniform deviate in the interval [0,m1-1].
+ */
+inline static uint32_t rng_rand_m1(rng_stream* s)
 {
   int64_t r=(int64_t)s->Cg[2]-s->Cg[5];
   r-=m1*(r>>63);
@@ -148,8 +151,34 @@ inline static uint32_t rng_rand32weak(rng_stream* s)
   return r;
 }
 
-inline static uint32_t rng_rand24(rng_stream *s){return rng_rand32weak(s)>>8;}
+/**
+ * @brief Uniform deviate in the interval [0,2^24-1].
+ *
+ * This function returns a uniform deviate in the interval [0,2^24-1].
+ *
+ * @param s: Handle to rng_stream.
+ * @return uniform deviate in the interval [0,2^24-1].
+ */
+inline static uint32_t rng_rand24(rng_stream *s){return rng_rand_m1(s)>>8;}
 
+/**
+ * @brief Uniform deviate in the interval [0,72057590531489791].
+ *
+ * This function returns a uniform deviate in the interval [0,72057590531489791].
+ *
+ * @param s: Handle to rng_stream.
+ * @return uniform deviate in the interval [0,72057590531489791]].
+ */
+inline static uint64_t rng_rand_m1_24(rng_stream *s){return (((uint64_t)rng_rand_m1(s))<<24)|(rng_rand_m1(s)>>8);}
+
+/**
+ * @brief Uniform deviate in the interval [0,2^32-1].
+ *
+ * This function returns a uniform deviate in the interval [0,2^32-1].
+ *
+ * @param s: Handle to rng_stream.
+ * @return uniform deviate in the interval [0,2^32-1].
+ */
 inline static uint32_t rng_rand32(rng_stream *s){
   if(!s->favail) {
     s->fill=rng_rand24(s);
@@ -164,6 +193,14 @@ inline static uint32_t rng_rand32(rng_stream *s){
   return ret;
 }
 
+/**
+ * @brief Uniform deviate in the interval [0,2^64-1].
+ *
+ * This function returns a uniform deviate in the interval [0,2^64-1].
+ *
+ * @param s: Handle to rng_stream.
+ * @return uniform deviate in the interval [0,2^64-1].
+ */
 inline static uint64_t rng_rand64(rng_stream *s){
   if(!s->favail) {
     s->fill=rng_rand24(s);

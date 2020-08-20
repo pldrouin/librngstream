@@ -1,14 +1,10 @@
-/***********************************************************************\
- *
- * Original implementation:      Pierre L'Ecuyer, University of Montreal
- *
- \***********************************************************************/
-
-//Modified by Pierre-Luc Drouin (pldrouin@pldrouin.net) in February 2012:
-//-Created Rand24, that generates true 24 bit pseudo random unsigned integers.
-//-Now using more inline functions for increased performance.
-//-Now using 64 bit integers instead of double precision variables for
-// increased performance on 64 bit CPUs.
+/**
+ * @file rngstream.c
+ * @brief Optimised C implementation of the RNG Stream algorithm.
+ * @author <Pierre-Luc.Drouin@drdc-rddc.gc.ca>, Defence Research and Development Canada Ottawa Research Centre.
+ * Original public domain algorithm and implementation from Pierre L'Ecuyer, University of
+ * Montreal. Also based on public domain optimised implementation of MRG32k3a by Sebastiano Vigna (vigna@acm.org).
+ */
 
 //Different instances can be used safely in a multi-threaded application (initialization of static tables is thread-safe).
 
@@ -35,7 +31,7 @@ void rng_init(rng_stream *s)
 
   rng_matvecmodm (A1p127, rng_nextseed, rng_nextseed, m1);
   rng_matvecmodm (A2p127, &rng_nextseed[3], &rng_nextseed[3], m2);
-  rng_rand32weak(s);
+  rng_rand_m1(s);
 }
 
 //-------------------------------------------------------------------------
