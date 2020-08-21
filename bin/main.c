@@ -29,9 +29,11 @@ int main(int nargs, char* args[])
   for(i=0; i<niters; ++i) {
   //for(;;) {
     //sum+=rng_rand_m1(&s);
+    //sum+=rng_rand32(&s);
+    sum+=rng_rand64(&s);
     //sum+=rng_rand_m1_24(&s);
     //sum+=rng_rand_u01(&s);
-    sum+=rng_rand_u01d(&s);
+    //sum+=rng_rand_pu01d(&s);
     //r=(rng_rand_m1(&s)<<16)|(rng_rand_m1(&s)&0xFFFF);;
     //r=rng_rand_m1(&s);
     //r=rng_rand32(&s);
