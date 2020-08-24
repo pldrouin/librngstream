@@ -4,6 +4,10 @@
  * @author <Pierre-Luc.Drouin@drdc-rddc.gc.ca>, Defence Research and Development Canada Ottawa Research Centre.
  * Original public domain algorithm and implementation from Pierre L'Ecuyer, University of
  * Montreal. Also based on public domain optimised implementation of MRG32k3a by Sebastiano Vigna (vigna@acm.org).
+ * Indicated generation times were obtained on computer with a i7-6600U CPU @
+ * 2.60GHz with a static library compiled using GCC 9.30 with compiler flags
+ * "-O3 -march=native -mieee-fp -pipe -Wall -g -Wcast-align" on Ubuntu 20.04.1
+ * LTS x86_64.
  */
 
 #ifndef RNGSTREAM_H
@@ -15,16 +19,17 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-#define m1   UINT64_C(4294967087)
-#define m2   UINT64_C(4294944443)
-#define a12  UINT64_C(1403580)
-#define a13n UINT64_C(810728)
-#define a21  UINT64_C(527612)
-#define a23n UINT64_C(1370589)
-#define corr1 UINT64_C(3482050076509336) //m1 * a13n
-#define corr2 UINT64_C(5886603609186927) //(m2 * a23n
-#define two17 UINT64_C(131072)
-#define two53 UINT64_C(9007199254740992)
+#define m1    INT64_C(4294967087)
+#define m2    INT64_C(4294944443)
+#define a12   INT64_C(1403580)
+#define a13n  INT64_C(810728)
+#define a21   INT64_C(527612)
+#define a23n  INT64_C(1370589)
+#define corr1 INT64_C(3482050076509336) //m1 * a13n
+#define corr2 INT64_C(5886603609186927) //m2 * a23n
+#define m1m2  INT64_C(4294967085) //m1 - 2
+#define two17 INT64_C(131072)
+#define two53 INT64_C(9007199254740992)
 
 // The following are the transition matrices of the two MRG components
 // (in matrix form), raised to the powers -1, 1, 2^76, and 2^127, resp.
@@ -121,7 +126,7 @@ void rng_writestatefull(rng_stream* s);
  * This function returns a uniform deviate in the interval [0,m1-1]. The original
  * U01 function was returning a uniform deviate in the interval [1,m1], before
  * multiplying by norm equal to 1/(m1+1), so U01 was returning a value in the
- * interval ]0,1). 
+ * interval ]0,1). Generation time is less than 4.294 ns.
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,m1-1].
@@ -134,14 +139,14 @@ inline static uint64_t rng_rand_m1(rng_stream* s)
   //printf("%16f %16f %16f %16f %16f %16f\n",(double)Cg[0],(double)Cg[1],(double)Cg[2],(double)Cg[3],(double)Cg[4],(double)Cg[5]);
 
   /* Component 1 */
-  uint64_t p=(a12 * s->Cg[1] - a13n * s->Cg[0] + corr1)%m1;
+  uint64_t p=(a12 * s->Cg[1] + corr1 - a13n * s->Cg[0])%m1;
 
   s->Cg[0]=s->Cg[1];
   s->Cg[1]=s->Cg[2];
   s->Cg[2]=p;
 
   /* Component 2 */
-  p=(a21 * s->Cg[5] - a23n * s->Cg[3] + corr2)%m2;
+  p=(a21 * s->Cg[5] + corr2 - a23n * s->Cg[3])%m2;
 
   s->Cg[3]=s->Cg[4];
   s->Cg[4]=s->Cg[5];
@@ -156,7 +161,8 @@ inline static uint64_t rng_rand_m1(rng_stream* s)
 /**
  * @brief Uniform deviate in the interval [1,m1], with m1=4294967087.
  *
- * This function returns a uniform deviate in the interval [1,m1].
+ * This function returns a uniform deviate in the interval [1,m1]. Generation
+ * tims is less than 4.294 ns.
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [1,m1].
@@ -169,14 +175,14 @@ inline static uint64_t rng_rand_pm1(rng_stream* s)
   //printf("%16f %16f %16f %16f %16f %16f\n",(double)Cg[0],(double)Cg[1],(double)Cg[2],(double)Cg[3],(double)Cg[4],(double)Cg[5]);
 
   /* Component 1 */
-  uint64_t p=(a12 * s->Cg[1] - a13n * s->Cg[0] + corr1)%m1;
+  uint64_t p=(a12 * s->Cg[1] + corr1 - a13n * s->Cg[0])%m1;
 
   s->Cg[0]=s->Cg[1];
   s->Cg[1]=s->Cg[2];
   s->Cg[2]=p;
 
   /* Component 2 */
-  p=(a21 * s->Cg[5] - a23n * s->Cg[3] + corr2)%m2;
+  p=(a21 * s->Cg[5] + corr2 - a23n * s->Cg[3])%m2;
 
   s->Cg[3]=s->Cg[4];
   s->Cg[4]=s->Cg[5];
@@ -201,7 +207,7 @@ inline static uint64_t rng_rand_pm1(rng_stream* s)
 /**
  * @brief Uniform deviate in the interval [0,72057590531489791].
  *
- * This function returns a uniform deviate in the interval [0,72057590531489791].
+ * This function returns a uniform deviate in the interval [0,72057590531489791]. Generation time is less than 7.975 ns (same as rng_rand32 without bit recycling).
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,72057590531489791].
@@ -212,7 +218,8 @@ inline static uint64_t rng_rand_m1_24(rng_stream *s){return (rng_rand_m1(s)<<24)
  * @brief Uniform deviate in the interval [0,2^32-1].
  *
  * This function returns a uniform deviate in the interval [0,2^32-1].
- * On x86_64, it is faster than rng_rand_m1_24.
+ * Generation time is less than 5.680 ns. Generation time without bit recycling
+ * is less than 7.933 ns.
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,2^32-1].
@@ -220,21 +227,28 @@ inline static uint64_t rng_rand_m1_24(rng_stream *s){return (rng_rand_m1(s)<<24)
 inline static uint32_t rng_rand32(rng_stream *s){
   if(!s->favail32) {
     s->fill32=RNG_RAND24(s);
-    s->favail32=2;
     uint32_t ret=RNG_RAND24(s)|(s->fill32<<24);
+    s->favail32=2;
     s->fill32>>=8;
     return ret;
   }
   uint32_t ret=RNG_RAND24(s)|(s->fill32<<24);
-  s->fill32>>=8;
   s->favail32-=1;
+  s->fill32>>=8;
   return ret;
 }
+/*
+inline static uint32_t rng_rand32(rng_stream *s){
+  return (RNG_RAND24(s)<<8)|(rng_rand_m1(s)>>24);
+}
+*/
 
 /**
  * @brief Uniform deviate in the interval [0,2^64-1].
  *
  * This function returns a uniform deviate in the interval [0,2^64-1].
+ * Generation time is less than 14.08 ns. Generation time with previous
+ * algorithm without bit recycling was less than 15.56 ns.
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,2^64-1].
@@ -242,29 +256,35 @@ inline static uint32_t rng_rand32(rng_stream *s){
 inline static uint64_t rng_rand64(rng_stream *s){
   if(!s->favail64) {
     s->fill64=RNG_RAND24(s);
-    s->favail64=1;
     uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill64<<48);
+    s->favail64=1;
     s->fill64>>=16;
     return ret;
 
   } else if(s->favail64==1) {
     s->fill64|=(RNG_RAND24(s)<<8);
-    s->favail64=2;
     uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill64<<48);
+    s->favail64=2;
     s->fill64>>=16;
     return ret;
   }
   uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill64<<48);
-  s->fill64>>=16;
   s->favail64=0;
+  s->fill64>>=16;
   return ret;
 }
+/*
+inline static uint64_t rng_rand64(rng_stream *s){
+  return (RNG_RAND24(s)<<48)|(RNG_RAND24(s)<<24)|RNG_RAND24(s);
+}
+*/
 
 /**
  * @brief Uniform deviate in the interval [0,1), with a non-truncated minimum spacing of 1/4294967087.
  *
- * This function returns a uniform deviate in the interval [0,1). The minimal
- * non-truncated spacing between two distinct values is 1/4294967087.
+ * This function returns a uniform deviate in the interval [0,1). The minimum
+ * non-truncated spacing between two distinct values is 1/4294967087. Generation
+ * time is less than 4.292 ns (very similar to rng_rand_m1).
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,1).
@@ -274,8 +294,9 @@ inline static double rng_rand_u01(rng_stream *s){return rng_rand_m1(s)*0x1.00000
 /**
  * @brief Uniform deviate in the interval (0,1], with a non-truncated minimum spacing of 1/4294967087.
  *
- * This function returns a uniform deviate in the interval (0,1]. The minimal
- * non-truncated spacing between two distinct values is 1/4294967087.
+ * This function returns a uniform deviate in the interval (0,1]. The minimum
+ * non-truncated spacing between two distinct values is 1/4294967087. Generation
+ * time is less than 4.292 ns (very similar to rng_rand_pm1).
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,1).
@@ -283,10 +304,12 @@ inline static double rng_rand_u01(rng_stream *s){return rng_rand_m1(s)*0x1.00000
 inline static double rng_rand_pu01(rng_stream *s){return rng_rand_pm1(s)*0x1.000000d10000bp-32;}
 
 /**
- * @brief Uniform deviate in the interval [0,1), with a non-truncated minimum spacing of 1/72057590531489792.
+ * @brief Uniform deviate in the interval [0,1], with a non-truncated minimum spacing of 1/72057590531489792.
  *
- * This function returns a uniform deviate in the interval [0,1). The minimal
+ * This function returns a uniform deviate in the interval [0,1]. The minimum
  * non-truncated spacing between two distinct values is 1/72057590531489792.
+ * Upper bound is included only due to double precision truncation error.
+ * Generation time is less than 7.959 ns.
  * No advantage of using this function over rng_rand_u01d as it is not any
  * faster (maybe it is even slightly slower) and it has a larger minimum
  * spacing.
@@ -297,26 +320,51 @@ inline static double rng_rand_pu01(rng_stream *s){return rng_rand_pm1(s)*0x1.000
 inline static double rng_rand_u01e(rng_stream *s){return rng_rand_m1_24(s)*0x1.000000d10000bp-56;}
 
 /**
- * @brief Uniform deviate in the interval [0,1), with a non-truncated minimum spacing of 1/18446742278413265569.
+ * @brief Uniform deviate in the interval [0,1], with a non-truncated minimum spacing of 1/18446742278413265569.
  *
- * This function returns a uniform deviate in the interval [0,1). The minimal
+ * This function returns a uniform deviate in the interval [0,1]. The minimum
  * non-truncated spacing between two distinct values is 1/18446742278413265569.
+ * Upper bound is included only due to double precision truncation error.
+ * Generation time is less than 7.938 ns.
+ *
+ * @param s: Handle to rng_stream.
+ * @return uniform deviate in the interval [0,1].
+ */
+inline static double rng_rand_u01d(rng_stream *s){return rng_rand_m1(s)*0x1.000001a200020p-64+rng_rand_m1(s)*0x1.000000d10000bp-32;}
+//inline static double rng_rand_u01d(rng_stream *s){return (rng_rand_m1(s)+rng_rand_m1(s)*0x1.000000d10000bp-32)*0x1.000000d10000bp-32;}
+
+/**
+ * @brief Uniform deviate in the interval [0,1), with a minimum spacing of
+ * 2^85/2097150.
+ *
+ * This function returns a uniform deviate in the interval [0,1). The minimum
+ * non-truncated spacing between two distinct values is 2^85/2097150, used only
+ * in the interval [4294967086/4294967087,0), with a non-truncated spacing of
+ * 1/18446742278413265569 elsewhere.
+ * It is a slightly modified version of rng_rand_u01dm, where the multiplicating
+ * factor for the 2nd order random number is slightly biased down in the
+ * mentioned interval to ensure that the upper bound remains excluded.
+ * Generation time of less than 7.977 ns was measured (very similar to
+ * rng_rand_u01d).
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,1).
  */
-inline static double rng_rand_u01d(rng_stream *s){return (rng_rand_m1(s)+rng_rand_m1(s)*0x1.000000d10000bp-32)*0x1.000000d10000bp-32;}
+inline static double rng_rand_u01dm(rng_stream *s){int64_t first=rng_rand_m1(s); return rng_rand_m1(s)*(0x1.000001a200020p-64+((m1m2-first)>>63)*0x1.1a200020p-84)+first*0x1.000000d10000bp-32;}
 
 /**
  * @brief Uniform deviate in the interval (0,1], with a non-truncated minimum spacing of 1/18446742278413265569.
  *
- * This function returns a uniform deviate in the interval (0,1]. The minimal
+ * This function returns a uniform deviate in the interval (0,1]. The minimum
  * non-truncated spacing between two distinct values is 1/18446742278413265569.
+ * Generation time is less than 8.032 ns (barely slower than rng_rand_u01d).
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval (0,1].
  */
-inline static double rng_rand_pu01d(rng_stream *s){return (rng_rand_pm1(s)-rng_rand_m1(s)*0x1.000000d10000bp-32)*0x1.000000d10000bp-32;}
+inline static double rng_rand_pu01d(rng_stream *s){return rng_rand_m1(s)*0x1.000001a200020p-64+rng_rand_pm1(s)*0x1.000000d10000bp-32;}
+//inline static double rng_rand_pu01d(rng_stream *s){double ret=rng_rand_u01d(s); while(ret==0) ret=rng_rand_u01d(s); return ret;}
+//inline static double rng_rand_pu01d(rng_stream *s){return (rng_rand_m1(s)+rng_rand_pm1(s)*0x1.000000d10000bp-32)*0x1.000000d10000bp-32;}
 
 #endif
 
