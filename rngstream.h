@@ -19,64 +19,64 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-#define m1    INT64_C(4294967087)
-#define m2    INT64_C(4294944443)
-#define a12   INT64_C(1403580)
-#define a13n  INT64_C(810728)
-#define a21   INT64_C(527612)
-#define a23n  INT64_C(1370589)
-#define corr1 INT64_C(3482050076509336) //m1 * a13n
-#define corr2 INT64_C(5886603609186927) //m2 * a23n
-#define m1m2  INT64_C(4294967085) //m1 - 2
-#define two17 INT64_C(131072)
-#define two53 INT64_C(9007199254740992)
+#define __rngstream_m1    INT64_C(4294967087)
+#define __rngstream_m2    INT64_C(4294944443)
+#define __rngstream_a12   INT64_C(1403580)
+#define __rngstream_a13n  INT64_C(810728)
+#define __rngstream_a21   INT64_C(527612)
+#define __rngstream_a23n  INT64_C(1370589)
+#define __rngstream_corr1 INT64_C(3482050076509336) //m1 * a13n
+#define __rngstream_corr2 INT64_C(5886603609186927) //m2 * a23n
+#define __rngstream_m1m2  INT64_C(4294967085) //m1 - 2
+#define __rngstream_two17 INT64_C(131072)
+#define __rngstream_two53 INT64_C(9007199254740992)
 
 // The following are the transition matrices of the two MRG components
 // (in matrix form), raised to the powers -1, 1, 2^76, and 2^127, resp.
 
-static const int64_t InvA1[3][3] = {          // Inverse of A1p0
+static const int64_t __rngstream_InvA1[3][3] = {          // Inverse of A1p0
        { 184888585,   0,  1945170933 },
        {         1,   0,           0 },
        {         0,   1,           0 }
        };
 
-static const int64_t InvA2[3][3] = {          // Inverse of A2p0
+static const int64_t __rngstream_InvA2[3][3] = {          // Inverse of A2p0
        {      0,  360363334,  4225571728 },
        {      1,          0,           0 },
        {      0,          1,           0 }
        };
 
-static const int64_t A1p0[3][3] = {
+static const int64_t __rngstream_A1p0[3][3] = {
        {       0,        1,       0 },
        {       0,        0,       1 },
        { -810728,  1403580,       0 }
        };
 
-static const int64_t A2p0[3][3] = {
+static const int64_t __rngstream_A2p0[3][3] = {
        {        0,        1,       0 },
        {        0,        0,       1 },
        { -1370589,        0,  527612 }
        };
 
-static const int64_t A1p76[3][3] = {
+static const int64_t __rngstream_A1p76[3][3] = {
        {      82758667, 1871391091, 4127413238 },
        {    3672831523,   69195019, 1871391091 },
        {    3672091415, 3528743235,   69195019 }
        };
 
-static const int64_t A2p76[3][3] = {
+static const int64_t __rngstream_A2p76[3][3] = {
        {    1511326704, 3759209742, 1610795712 },
        {    4292754251, 1511326704, 3889917532 },
        {    3859662829, 4292754251, 3708466080 }
        };
 
-static const int64_t A1p127[3][3] = {
+static const int64_t __rngstream_A1p127[3][3] = {
        {    2427906178, 3580155704,  949770784 },
        {     226153695, 1230515664, 3580155704 },
        {    1988835001,  986791581, 1230515664 }
        };
 
-static const int64_t A2p127[3][3] = {
+static const int64_t __rngstream_A2p127[3][3] = {
        {    1464411153,  277697599, 1610723613 },
        {      32183930, 1464411153, 1022607788 },
        {    2824425944,   32183930, 2093834863 }
@@ -110,11 +110,11 @@ int rng_checkseed (const uint64_t seed[6]);
 
 void rng_init(rng_stream* s);
 bool rng_setseed(rng_stream* s, uint64_t const* const seed); //!< Values can fit in uint32_t, but using uint64_t for faster processing speed on 64bit CPUs
-inline static void rng_advanceseed(uint64_t const* seedin, uint64_t* seedout){rng_matvecmodm (A1p127,seedin,seedout,m1); rng_matvecmodm (A2p127,&seedin[3],&seedout[3],m2);}
+inline static void rng_advanceseed(uint64_t const* seedin, uint64_t* seedout){rng_matvecmodm (__rngstream_A1p127,seedin,seedout,__rngstream_m1); rng_matvecmodm (__rngstream_A2p127,&seedin[3],&seedout[3],__rngstream_m2);}
 inline static bool rng_setpackageseed(uint64_t const* const seed){if(rng_checkseed(seed)) return false; memcpy(rng_nextseed,seed,6*sizeof(uint64_t)); return true;} //!< Values can fit in uint32_t, but using uint64_t for faster processing speed on 64bit CPUs
 inline static void rng_resetstartstream(rng_stream* s){int i; for(i = 5; i >=0; --i) s->Cg[i] = s->Bg[i] = s->Ig[i];}
 inline static void rng_resetstartsubstream(rng_stream* s){memcpy(s->Cg,s->Bg,6*sizeof(uint64_t));}
-inline static void rng_resetnextsubstream(rng_stream* s){rng_matvecmodm(A1p76, s->Bg, s->Bg, m1); rng_matvecmodm(A2p76, s->Bg+3, s->Bg+3, m2); memcpy(s->Cg,s->Bg,6*sizeof(uint64_t));}
+inline static void rng_resetnextsubstream(rng_stream* s){rng_matvecmodm(__rngstream_A1p76, s->Bg, s->Bg, __rngstream_m1); rng_matvecmodm(__rngstream_A2p76, s->Bg+3, s->Bg+3, __rngstream_m2); memcpy(s->Cg,s->Bg,6*sizeof(uint64_t));}
 void rng_advancestate(rng_stream* s, const long e, const long c);
 inline static void rng_getstate(rng_stream* s, uint64_t* const seed){memcpy(seed,s->Cg,6*sizeof(uint64_t));}
 void rng_writestate(rng_stream* s);
@@ -134,19 +134,19 @@ void rng_writestatefull(rng_stream* s);
 inline static uint64_t rng_rand_m1(rng_stream* s)
 {
   int64_t r=(int64_t)s->Cg[2]-s->Cg[5];
-  r-=m1*(r>>63);
+  r-=__rngstream_m1*(r>>63);
 
   //printf("%16f %16f %16f %16f %16f %16f\n",(double)Cg[0],(double)Cg[1],(double)Cg[2],(double)Cg[3],(double)Cg[4],(double)Cg[5]);
 
   /* Component 1 */
-  uint64_t p=(a12 * s->Cg[1] + corr1 - a13n * s->Cg[0])%m1;
+  uint64_t p=(__rngstream_a12 * s->Cg[1] + __rngstream_corr1 - __rngstream_a13n * s->Cg[0])%__rngstream_m1;
 
   s->Cg[0]=s->Cg[1];
   s->Cg[1]=s->Cg[2];
   s->Cg[2]=p;
 
   /* Component 2 */
-  p=(a21 * s->Cg[5] + corr2 - a23n * s->Cg[3])%m2;
+  p=(__rngstream_a21 * s->Cg[5] + __rngstream_corr2 - __rngstream_a23n * s->Cg[3])%__rngstream_m2;
 
   s->Cg[3]=s->Cg[4];
   s->Cg[4]=s->Cg[5];
@@ -170,19 +170,19 @@ inline static uint64_t rng_rand_m1(rng_stream* s)
 inline static uint64_t rng_rand_pm1(rng_stream* s)
 {
   int64_t r=(int64_t)s->Cg[2]-s->Cg[5];
-  r-=m1*((r-1)>>63);
+  r-=__rngstream_m1*((r-1)>>63);
 
   //printf("%16f %16f %16f %16f %16f %16f\n",(double)Cg[0],(double)Cg[1],(double)Cg[2],(double)Cg[3],(double)Cg[4],(double)Cg[5]);
 
   /* Component 1 */
-  uint64_t p=(a12 * s->Cg[1] + corr1 - a13n * s->Cg[0])%m1;
+  uint64_t p=(__rngstream_a12 * s->Cg[1] + __rngstream_corr1 - __rngstream_a13n * s->Cg[0])%__rngstream_m1;
 
   s->Cg[0]=s->Cg[1];
   s->Cg[1]=s->Cg[2];
   s->Cg[2]=p;
 
   /* Component 2 */
-  p=(a21 * s->Cg[5] + corr2 - a23n * s->Cg[3])%m2;
+  p=(__rngstream_a21 * s->Cg[5] + __rngstream_corr2 - __rngstream_a23n * s->Cg[3])%__rngstream_m2;
 
   s->Cg[3]=s->Cg[4];
   s->Cg[4]=s->Cg[5];
@@ -350,7 +350,7 @@ inline static double rng_rand_u01d(rng_stream *s){return rng_rand_m1(s)*0x1.0000
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,1).
  */
-inline static double rng_rand_u01dm(rng_stream *s){int64_t first=rng_rand_m1(s); return rng_rand_m1(s)*(0x1.000001a200020p-64+((m1m2-first)>>63)*0x1.1a200020p-84)+first*0x1.000000d10000bp-32;}
+inline static double rng_rand_u01dm(rng_stream *s){int64_t first=rng_rand_m1(s); return rng_rand_m1(s)*(0x1.000001a200020p-64+((__rngstream_m1m2-first)>>63)*0x1.1a200020p-84)+first*0x1.000000d10000bp-32;}
 
 /**
  * @brief Uniform deviate in the interval (0,1], with a non-truncated minimum spacing of 1/18446742278413265569.

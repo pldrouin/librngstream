@@ -30,8 +30,8 @@ void rng_init(rng_stream *s)
   s->favail32=0;
   s->favail64=0;
 
-  rng_matvecmodm (A1p127, rng_nextseed, rng_nextseed, m1);
-  rng_matvecmodm (A2p127, &rng_nextseed[3], &rng_nextseed[3], m2);
+  rng_matvecmodm (__rngstream_A1p127, rng_nextseed, rng_nextseed, __rngstream_m1);
+  rng_matvecmodm (__rngstream_A2p127, &rng_nextseed[3], &rng_nextseed[3], __rngstream_m2);
   rng_rand_m1(s);
 }
 
@@ -56,28 +56,28 @@ void rng_advancestate(rng_stream* s, const long e, const long c)
   int64_t B1[3][3], C1[3][3], B2[3][3], C2[3][3];
 
   if (e > 0) {
-    rng_mattwopowmodm (A1p0, B1, m1, e);
-    rng_mattwopowmodm (A2p0, B2, m2, e);
+    rng_mattwopowmodm (__rngstream_A1p0, B1, __rngstream_m1, e);
+    rng_mattwopowmodm (__rngstream_A2p0, B2, __rngstream_m2, e);
   } else if (e < 0) {
-    rng_mattwopowmodm (InvA1, B1, m1, -e);
-    rng_mattwopowmodm (InvA2, B2, m2, -e);
+    rng_mattwopowmodm (__rngstream_InvA1, B1, __rngstream_m1, -e);
+    rng_mattwopowmodm (__rngstream_InvA2, B2, __rngstream_m2, -e);
   }
 
   if (c >= 0) {
-    rng_matpowmodm (A1p0, C1, m1, c);
-    rng_matpowmodm (A2p0, C2, m2, c);
+    rng_matpowmodm (__rngstream_A1p0, C1, __rngstream_m1, c);
+    rng_matpowmodm (__rngstream_A2p0, C2, __rngstream_m2, c);
   } else {
-    rng_matpowmodm (InvA1, C1, m1, -c);
-    rng_matpowmodm (InvA2, C2, m2, -c);
+    rng_matpowmodm (__rngstream_InvA1, C1, __rngstream_m1, -c);
+    rng_matpowmodm (__rngstream_InvA2, C2, __rngstream_m2, -c);
   }
 
   if (e) {
-    rng_matmatmodm (B1, C1, C1, m1);
-    rng_matmatmodm (B2, C2, C2, m2);
+    rng_matmatmodm (B1, C1, C1, __rngstream_m1);
+    rng_matmatmodm (B2, C2, C2, __rngstream_m2);
   }
 
-  rng_matvecmodm (C1, s->Cg, s->Cg, m1);
-  rng_matvecmodm (C2, s->Cg+3, s->Cg+3, m2);
+  rng_matvecmodm (C1, s->Cg, s->Cg, __rngstream_m1);
+  rng_matvecmodm (C2, s->Cg+3, s->Cg+3, __rngstream_m2);
 }
 
 //-------------------------------------------------------------------------
@@ -154,11 +154,11 @@ uint64_t rng_multmodm (int64_t a, const int64_t s, const uint64_t c, const uint6
 
   v = (double)(a) * s + c;
 
-  if (v >= two53 || v <= -two53) {
-    a1 = (long)(a / two17);    a -= a1 * two17;
+  if (v >= __rngstream_two53 || v <= -__rngstream_two53) {
+    a1 = (long)(a / __rngstream_two17);    a -= a1 * __rngstream_two17;
     v  = a1 * s;
     a1 = (long)(v / m);     v -= a1 * m;
-    v = v * two17 + a * s + c;
+    v = v * __rngstream_two17 + a * s + c;
   }
 
   a1 = (long)(v / m);
@@ -231,7 +231,7 @@ int rng_checkseed (const uint64_t seed[6])
   int i;
 
   for (i = 0; i < 3; ++i) {
-    if (seed[i] >= m1) {
+    if (seed[i] >= __rngstream_m1) {
       fprintf(stderr,"****************************************\n"
 	"ERROR: Seed[%i] >= 4294967087, Seed is not set."
 	"\n****************************************\n\n",i);
@@ -239,7 +239,7 @@ int rng_checkseed (const uint64_t seed[6])
     }
   }
   for (i = 3; i < 6; ++i) {
-    if (seed[i] >= m2) {
+    if (seed[i] >= __rngstream_m2) {
       fprintf(stderr,"*****************************************\n"
 	"ERROR: Seed[%i] >= 4294944443, Seed is not set."
 	"\n*****************************************\n\n",i);
