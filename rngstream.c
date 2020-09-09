@@ -27,8 +27,8 @@ void rng_init(rng_stream *s)
   for (i = 5; i >=0; --i) {
     s->Bg[i] = s->Cg[i] = s->Ig[i] = rng_nextseed[i];
   }
-  s->favail32=0;
-  s->favail64=0;
+  s->favail8=0;
+  s->favail16=0;
 
   rng_matvecmodm (__rngstream_A1p127, rng_nextseed, rng_nextseed, __rngstream_m1);
   rng_matvecmodm (__rngstream_A2p127, &rng_nextseed[3], &rng_nextseed[3], __rngstream_m2);

@@ -94,10 +94,10 @@ static uint64_t rng_nextseed[6] =
 typedef struct
 {
 	uint64_t Cg[6], Bg[6], Ig[6];  //!< Values can fit in uint32_t, but using uint64_t for faster processing speed on 64bit CPUs
-	uint64_t fill64;
-	uint32_t fill32;
-	uint8_t favail32;
-	uint8_t favail64;
+	uint64_t fill16;
+	uint32_t fill8;
+	uint8_t favail8;
+	uint8_t favail16;
 } rng_stream;
 
 uint64_t rng_multmodm (int64_t a, const int64_t s, const uint64_t c, const uint64_t m);
@@ -207,7 +207,7 @@ inline static uint64_t rng_rand_pm1(rng_stream* s)
 /**
  * @brief Uniform deviate in the interval [0,72057590531489791].
  *
- * This function returns a uniform deviate in the interval [0,72057590531489791]. Generation time is less than 7.975 ns (same as rng_rand32 without bit recycling).
+ * This function returns a uniform deviate in the interval [0,72057590531489791]. Generation time is less than 7.975 ns (same as rng_rand32 without bit saving).
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,72057590531489791].
@@ -218,23 +218,27 @@ inline static uint64_t rng_rand_m1_24(rng_stream *s){return (rng_rand_m1(s)<<24)
  * @brief Uniform deviate in the interval [0,2^32-1].
  *
  * This function returns a uniform deviate in the interval [0,2^32-1].
- * Generation time is less than 5.680 ns. Generation time without bit recycling
+ * It assumes that the 24 MSBs from rng_rand_m1 are uniformly distributed.
+ * Generation time is less than 5.680 ns. Generation time without bit saving
  * is less than 7.933 ns.
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,2^32-1].
  */
 inline static uint32_t rng_rand32(rng_stream *s){
-  if(!s->favail32) {
-    s->fill32=RNG_RAND24(s);
-    uint32_t ret=RNG_RAND24(s)|(s->fill32<<24);
-    s->favail32=2;
-    s->fill32>>=8;
+  if(!s->favail8) {
+    s->fill8=RNG_RAND24(s);
+    uint32_t ret=RNG_RAND24(s)|(s->fill8<<24);
+    //uint32_t ret=rng_rand_m1(s)^s->fill8; //Slower. One XOR operation is slower
+    //than two bit shifts + OR
+    s->favail8=2;
+    s->fill8>>=8;
     return ret;
   }
-  uint32_t ret=RNG_RAND24(s)|(s->fill32<<24);
-  s->favail32-=1;
-  s->fill32>>=8;
+  uint32_t ret=RNG_RAND24(s)|(s->fill8<<24);
+  //uint32_t ret=rng_rand_m1(s)^s->fill8;
+  s->favail8-=1;
+  s->fill8>>=8;
   return ret;
 }
 /*
@@ -247,30 +251,33 @@ inline static uint32_t rng_rand32(rng_stream *s){
  * @brief Uniform deviate in the interval [0,2^64-1].
  *
  * This function returns a uniform deviate in the interval [0,2^64-1].
- * Generation time is less than 14.08 ns. Generation time with previous
- * algorithm without bit recycling was less than 15.56 ns.
+ * Generation time is less than 13.84 ns. Generation time with previous
+ * algorithm without bit saving was less than 15.56 ns.
  *
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,2^64-1].
  */
 inline static uint64_t rng_rand64(rng_stream *s){
-  if(!s->favail64) {
-    s->fill64=RNG_RAND24(s);
-    uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill64<<48);
-    s->favail64=1;
-    s->fill64>>=16;
+  if(!s->favail16) {
+    s->fill16=RNG_RAND24(s);
+    uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill16<<48);
+    //uint64_t ret=rng_rand_m1(s)^(rng_rand_m1(s)<<24)^s->fill16;
+    s->favail16=1;
+    s->fill16>>=16;
     return ret;
 
-  } else if(s->favail64==1) {
-    s->fill64|=(RNG_RAND24(s)<<8);
-    uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill64<<48);
-    s->favail64=2;
-    s->fill64>>=16;
+  } else if(s->favail16==1) {
+    s->fill16|=(RNG_RAND24(s)<<8);
+    uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill16<<48);
+    //uint64_t ret=rng_rand_m1(s)^(rng_rand_m1(s)<<24)^s->fill16;
+    s->favail16=2;
+    s->fill16>>=16;
     return ret;
   }
-  uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill64<<48);
-  s->favail64=0;
-  s->fill64>>=16;
+  uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill16<<48);
+  //uint64_t ret=rng_rand_m1(s)^(rng_rand_m1(s)<<24)^s->fill16;
+  s->favail16=0;
+  s->fill16>>=16;
   return ret;
 }
 /*
@@ -299,7 +306,7 @@ inline static double rng_rand_u01(rng_stream *s){return rng_rand_m1(s)*0x1.00000
  * time is less than 4.292 ns (very similar to rng_rand_pm1).
  *
  * @param s: Handle to rng_stream.
- * @return uniform deviate in the interval [0,1).
+ * @return uniform deviate in the interval (0,1].
  */
 inline static double rng_rand_pu01(rng_stream *s){return rng_rand_pm1(s)*0x1.000000d10000bp-32;}
 
@@ -315,7 +322,7 @@ inline static double rng_rand_pu01(rng_stream *s){return rng_rand_pm1(s)*0x1.000
  * spacing.
  *
  * @param s: Handle to rng_stream.
- * @return uniform deviate in the interval [0,1).
+ * @return uniform deviate in the interval [0,1].
  */
 inline static double rng_rand_u01e(rng_stream *s){return rng_rand_m1_24(s)*0x1.000000d10000bp-56;}
 
