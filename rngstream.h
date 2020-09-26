@@ -115,6 +115,7 @@ inline static bool rng_setpackageseed(uint64_t const* const seed){if(rng_checkse
 inline static void rng_resetstartstream(rng_stream* s){int i; for(i = 5; i >=0; --i) s->Cg[i] = s->Bg[i] = s->Ig[i];}
 inline static void rng_resetstartsubstream(rng_stream* s){memcpy(s->Cg,s->Bg,6*sizeof(uint64_t));}
 inline static void rng_resetnextsubstream(rng_stream* s){rng_matvecmodm(__rngstream_A1p76, s->Bg, s->Bg, __rngstream_m1); rng_matvecmodm(__rngstream_A2p76, s->Bg+3, s->Bg+3, __rngstream_m2); memcpy(s->Cg,s->Bg,6*sizeof(uint64_t));}
+inline static void rng_skipstreams(const long c){int i; for(i=c-1; i>=0; --i) {rng_matvecmodm (__rngstream_A1p127, rng_nextseed, rng_nextseed, __rngstream_m1); rng_matvecmodm (__rngstream_A2p127, &rng_nextseed[3], &rng_nextseed[3], __rngstream_m2);}}
 void rng_advancestate(rng_stream* s, const long e, const long c);
 inline static void rng_getstate(rng_stream* s, uint64_t* const seed){memcpy(seed,s->Cg,6*sizeof(uint64_t));}
 void rng_writestate(rng_stream* s);
@@ -348,7 +349,7 @@ inline static double rng_rand_u01d(rng_stream *s){return rng_rand_m1(s)*0x1.0000
  * non-truncated spacing between two distinct values is 2^85/2097150, used only
  * in the interval [4294967086/4294967087,0), with a non-truncated spacing of
  * 1/18446742278413265569 elsewhere.
- * It is a slightly modified version of rng_rand_u01dm, where the multiplicating
+ * It is a slightly modified version of rng_rand_u01d, where the multiplicating
  * factor for the 2nd order random number is slightly biased down in the
  * mentioned interval to ensure that the upper bound remains excluded.
  * Generation time of less than 7.977 ns was measured (very similar to
