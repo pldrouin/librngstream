@@ -12,6 +12,16 @@
 #include <stdio.h>
 #include "rngstream.h"
 
+//-------------------------------------------------------------------------
+// The default seed of the package; will be the seed of the first
+// declared RNGStream, unless SetPackageSeed is called.
+//
+static uint64_t rng_nextseed[6] =
+{
+   12345, 12345, 12345, 12345, 12345, 12345
+};
+
+
 //*************************************************************************
 // Public members of the class start here
 
@@ -43,6 +53,25 @@ bool rng_setseed(rng_stream* s, uint64_t const* const seed)
 
   for (i = 5; i >=0; --i) s->Cg[i] = s->Bg[i] = s->Ig[i] = seed[i];
   return true; // SUCCESS
+}
+
+//-------------------------------------------------------------------------
+bool rng_setpackageseed(uint64_t const* const seed)
+{
+  if(rng_checkseed(seed)) return false;
+  memcpy(rng_nextseed,seed,6*sizeof(uint64_t));
+  return true;
+}
+
+//-------------------------------------------------------------------------
+void rng_skipstreams(const long c)
+{
+  int i;
+  
+  for(i=c-1; i>=0; --i) {
+    rng_matvecmodm(__rngstream_A1p127, rng_nextseed, rng_nextseed, __rngstream_m1);
+    rng_matvecmodm(__rngstream_A2p127, &rng_nextseed[3], &rng_nextseed[3], __rngstream_m2);
+  }
 }
 
 //-------------------------------------------------------------------------

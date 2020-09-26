@@ -82,15 +82,6 @@ static const int64_t __rngstream_A2p127[3][3] = {
        {    2824425944,   32183930, 2093834863 }
        };
 
-//-------------------------------------------------------------------------
-// The default seed of the package; will be the seed of the first
-// declared RNGStream, unless SetPackageSeed is called.
-//
-static uint64_t rng_nextseed[6] =
-{
-   12345, 12345, 12345, 12345, 12345, 12345
-};
-
 typedef struct
 {
 	uint64_t Cg[6], Bg[6], Ig[6];  //!< Values can fit in uint32_t, but using uint64_t for faster processing speed on 64bit CPUs
@@ -111,11 +102,11 @@ int rng_checkseed (const uint64_t seed[6]);
 void rng_init(rng_stream* s);
 bool rng_setseed(rng_stream* s, uint64_t const* const seed); //!< Values can fit in uint32_t, but using uint64_t for faster processing speed on 64bit CPUs
 inline static void rng_advanceseed(uint64_t const* seedin, uint64_t* seedout){rng_matvecmodm (__rngstream_A1p127,seedin,seedout,__rngstream_m1); rng_matvecmodm (__rngstream_A2p127,&seedin[3],&seedout[3],__rngstream_m2);}
-inline static bool rng_setpackageseed(uint64_t const* const seed){if(rng_checkseed(seed)) return false; memcpy(rng_nextseed,seed,6*sizeof(uint64_t)); return true;} //!< Values can fit in uint32_t, but using uint64_t for faster processing speed on 64bit CPUs
+bool rng_setpackageseed(uint64_t const* const seed); //!< Values can fit in uint32_t, but using uint64_t for faster processing speed on 64bit CPUs
 inline static void rng_resetstartstream(rng_stream* s){int i; for(i = 5; i >=0; --i) s->Cg[i] = s->Bg[i] = s->Ig[i];}
 inline static void rng_resetstartsubstream(rng_stream* s){memcpy(s->Cg,s->Bg,6*sizeof(uint64_t));}
 inline static void rng_resetnextsubstream(rng_stream* s){rng_matvecmodm(__rngstream_A1p76, s->Bg, s->Bg, __rngstream_m1); rng_matvecmodm(__rngstream_A2p76, s->Bg+3, s->Bg+3, __rngstream_m2); memcpy(s->Cg,s->Bg,6*sizeof(uint64_t));}
-inline static void rng_skipstreams(const long c){int i; for(i=c-1; i>=0; --i) {rng_matvecmodm (__rngstream_A1p127, rng_nextseed, rng_nextseed, __rngstream_m1); rng_matvecmodm (__rngstream_A2p127, &rng_nextseed[3], &rng_nextseed[3], __rngstream_m2);}}
+void rng_skipstreams(const long c);
 void rng_advancestate(rng_stream* s, const long e, const long c);
 inline static void rng_getstate(rng_stream* s, uint64_t* const seed){memcpy(seed,s->Cg,6*sizeof(uint64_t));}
 void rng_writestate(rng_stream* s);
