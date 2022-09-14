@@ -91,6 +91,8 @@ typedef struct
 	uint8_t favail16;
 } rng_stream;
 
+typedef void _rng_stream;
+
 uint64_t rng_multmodm (int64_t a, const int64_t s, const uint64_t c, const uint64_t m);
 void rng_matvecmodm (const int64_t A[3][3], uint64_t const* const s, uint64_t* const v, const uint64_t m);
 void rng_matvecmodmll (const int64_t A[3][3], int64_t const* const s, int64_t* const v, const uint64_t m);
@@ -123,26 +125,26 @@ void rng_writestatefull(rng_stream* s);
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,m1-1].
  */
-inline static uint64_t rng_rand_m1(rng_stream* s)
+inline static uint64_t rng_rand_m1(_rng_stream* s)
 {
-  int64_t r=(int64_t)s->Cg[2]-s->Cg[5];
+  int64_t r=(int64_t)((rng_stream*)s)->Cg[2]-((rng_stream*)s)->Cg[5];
   r-=__rngstream_m1*(r>>63);
 
   //printf("%16f %16f %16f %16f %16f %16f\n",(double)Cg[0],(double)Cg[1],(double)Cg[2],(double)Cg[3],(double)Cg[4],(double)Cg[5]);
 
   /* Component 1 */
-  uint64_t p=(__rngstream_a12 * s->Cg[1] + __rngstream_corr1 - __rngstream_a13n * s->Cg[0])%__rngstream_m1;
+  uint64_t p=(__rngstream_a12 * ((rng_stream*)s)->Cg[1] + __rngstream_corr1 - __rngstream_a13n * ((rng_stream*)s)->Cg[0])%__rngstream_m1;
 
-  s->Cg[0]=s->Cg[1];
-  s->Cg[1]=s->Cg[2];
-  s->Cg[2]=p;
+  ((rng_stream*)s)->Cg[0]=((rng_stream*)s)->Cg[1];
+  ((rng_stream*)s)->Cg[1]=((rng_stream*)s)->Cg[2];
+  ((rng_stream*)s)->Cg[2]=p;
 
   /* Component 2 */
-  p=(__rngstream_a21 * s->Cg[5] + __rngstream_corr2 - __rngstream_a23n * s->Cg[3])%__rngstream_m2;
+  p=(__rngstream_a21 * ((rng_stream*)s)->Cg[5] + __rngstream_corr2 - __rngstream_a23n * ((rng_stream*)s)->Cg[3])%__rngstream_m2;
 
-  s->Cg[3]=s->Cg[4];
-  s->Cg[4]=s->Cg[5];
-  s->Cg[5]=p;
+  ((rng_stream*)s)->Cg[3]=((rng_stream*)s)->Cg[4];
+  ((rng_stream*)s)->Cg[4]=((rng_stream*)s)->Cg[5];
+  ((rng_stream*)s)->Cg[5]=p;
 
   //printf("%16f %16f\n",(double)p1,(double)p2);
 
@@ -159,26 +161,26 @@ inline static uint64_t rng_rand_m1(rng_stream* s)
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [1,m1].
  */
-inline static uint64_t rng_rand_pm1(rng_stream* s)
+inline static uint64_t rng_rand_pm1(_rng_stream* s)
 {
-  int64_t r=(int64_t)s->Cg[2]-s->Cg[5];
+  int64_t r=(int64_t)((rng_stream*)s)->Cg[2]-((rng_stream*)s)->Cg[5];
   r-=__rngstream_m1*((r-1)>>63);
 
   //printf("%16f %16f %16f %16f %16f %16f\n",(double)Cg[0],(double)Cg[1],(double)Cg[2],(double)Cg[3],(double)Cg[4],(double)Cg[5]);
 
   /* Component 1 */
-  uint64_t p=(__rngstream_a12 * s->Cg[1] + __rngstream_corr1 - __rngstream_a13n * s->Cg[0])%__rngstream_m1;
+  uint64_t p=(__rngstream_a12 * ((rng_stream*)s)->Cg[1] + __rngstream_corr1 - __rngstream_a13n * ((rng_stream*)s)->Cg[0])%__rngstream_m1;
 
-  s->Cg[0]=s->Cg[1];
-  s->Cg[1]=s->Cg[2];
-  s->Cg[2]=p;
+  ((rng_stream*)s)->Cg[0]=((rng_stream*)s)->Cg[1];
+  ((rng_stream*)s)->Cg[1]=((rng_stream*)s)->Cg[2];
+  ((rng_stream*)s)->Cg[2]=p;
 
   /* Component 2 */
-  p=(__rngstream_a21 * s->Cg[5] + __rngstream_corr2 - __rngstream_a23n * s->Cg[3])%__rngstream_m2;
+  p=(__rngstream_a21 * ((rng_stream*)s)->Cg[5] + __rngstream_corr2 - __rngstream_a23n * ((rng_stream*)s)->Cg[3])%__rngstream_m2;
 
-  s->Cg[3]=s->Cg[4];
-  s->Cg[4]=s->Cg[5];
-  s->Cg[5]=p;
+  ((rng_stream*)s)->Cg[3]=((rng_stream*)s)->Cg[4];
+  ((rng_stream*)s)->Cg[4]=((rng_stream*)s)->Cg[5];
+  ((rng_stream*)s)->Cg[5]=p;
 
   //printf("%16f %16f\n",(double)p1,(double)p2);
 
@@ -204,7 +206,7 @@ inline static uint64_t rng_rand_pm1(rng_stream* s)
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,72057590531489791].
  */
-inline static uint64_t rng_rand_m1_24(rng_stream *s){return (rng_rand_m1(s)<<24)|(rng_rand_m1(s)>>8);}
+inline static uint64_t rng_rand_m1_24(_rng_stream *s){return (rng_rand_m1(s)<<24)|(rng_rand_m1(s)>>8);}
 
 /**
  * @brief Uniform deviate in the interval [0,2^32-1].
@@ -217,20 +219,20 @@ inline static uint64_t rng_rand_m1_24(rng_stream *s){return (rng_rand_m1(s)<<24)
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,2^32-1].
  */
-inline static uint32_t rng_rand32(rng_stream *s){
-  if(!s->favail8) {
-    s->fill8=RNG_RAND24(s);
-    uint32_t ret=RNG_RAND24(s)|(s->fill8<<24);
-    //uint32_t ret=rng_rand_m1(s)^s->fill8; //Slower. One XOR operation is slower
+inline static uint32_t rng_rand32(_rng_stream *s){
+  if(!((rng_stream*)s)->favail8) {
+    ((rng_stream*)s)->fill8=RNG_RAND24(s);
+    uint32_t ret=RNG_RAND24(s)|(((rng_stream*)s)->fill8<<24);
+    //uint32_t ret=rng_rand_m1(s)^((rng_stream*)s)->fill8; //Slower. One XOR operation is slower
     //than two bit shifts + OR
-    s->favail8=2;
-    s->fill8>>=8;
+    ((rng_stream*)s)->favail8=2;
+    ((rng_stream*)s)->fill8>>=8;
     return ret;
   }
-  uint32_t ret=RNG_RAND24(s)|(s->fill8<<24);
-  //uint32_t ret=rng_rand_m1(s)^s->fill8;
-  s->favail8-=1;
-  s->fill8>>=8;
+  uint32_t ret=RNG_RAND24(s)|(((rng_stream*)s)->fill8<<24);
+  //uint32_t ret=rng_rand_m1(s)^((rng_stream*)s)->fill8;
+  ((rng_stream*)s)->favail8-=1;
+  ((rng_stream*)s)->fill8>>=8;
   return ret;
 }
 /*
@@ -249,27 +251,27 @@ inline static uint32_t rng_rand32(rng_stream *s){
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,2^64-1].
  */
-inline static uint64_t rng_rand64(rng_stream *s){
-  if(!s->favail16) {
-    s->fill16=RNG_RAND24(s);
-    uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill16<<48);
-    //uint64_t ret=rng_rand_m1(s)^(rng_rand_m1(s)<<24)^s->fill16;
-    s->favail16=1;
-    s->fill16>>=16;
+inline static uint64_t rng_rand64(_rng_stream *s){
+  if(!((rng_stream*)s)->favail16) {
+    ((rng_stream*)s)->fill16=RNG_RAND24(s);
+    uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(((rng_stream*)s)->fill16<<48);
+    //uint64_t ret=rng_rand_m1(s)^(rng_rand_m1(s)<<24)^((rng_stream*)s)->fill16;
+    ((rng_stream*)s)->favail16=1;
+    ((rng_stream*)s)->fill16>>=16;
     return ret;
 
-  } else if(s->favail16==1) {
-    s->fill16|=(RNG_RAND24(s)<<8);
-    uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill16<<48);
-    //uint64_t ret=rng_rand_m1(s)^(rng_rand_m1(s)<<24)^s->fill16;
-    s->favail16=2;
-    s->fill16>>=16;
+  } else if(((rng_stream*)s)->favail16==1) {
+    ((rng_stream*)s)->fill16|=(RNG_RAND24(s)<<8);
+    uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(((rng_stream*)s)->fill16<<48);
+    //uint64_t ret=rng_rand_m1(s)^(rng_rand_m1(s)<<24)^((rng_stream*)s)->fill16;
+    ((rng_stream*)s)->favail16=2;
+    ((rng_stream*)s)->fill16>>=16;
     return ret;
   }
-  uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(s->fill16<<48);
-  //uint64_t ret=rng_rand_m1(s)^(rng_rand_m1(s)<<24)^s->fill16;
-  s->favail16=0;
-  s->fill16>>=16;
+  uint64_t ret=RNG_RAND24(s)|(RNG_RAND24(s)<<24)|(((rng_stream*)s)->fill16<<48);
+  //uint64_t ret=rng_rand_m1(s)^(rng_rand_m1(s)<<24)^((rng_stream*)s)->fill16;
+  ((rng_stream*)s)->favail16=0;
+  ((rng_stream*)s)->fill16>>=16;
   return ret;
 }
 /*
@@ -288,7 +290,7 @@ inline static uint64_t rng_rand64(rng_stream *s){
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,1).
  */
-inline static double rng_rand_u01(rng_stream *s){return rng_rand_m1(s)*0x1.000000d10000bp-32;}
+inline static double rng_rand_u01(_rng_stream *s){return rng_rand_m1(s)*0x1.000000d10000bp-32;}
 
 /**
  * @brief Uniform deviate in the interval (0,1], with a non-truncated minimum spacing of 1/4294967087.
@@ -300,7 +302,7 @@ inline static double rng_rand_u01(rng_stream *s){return rng_rand_m1(s)*0x1.00000
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval (0,1].
  */
-inline static double rng_rand_pu01(rng_stream *s){return rng_rand_pm1(s)*0x1.000000d10000bp-32;}
+inline static double rng_rand_pu01(_rng_stream *s){return rng_rand_pm1(s)*0x1.000000d10000bp-32;}
 
 /**
  * @brief Uniform deviate in the interval [0,1], with a non-truncated minimum spacing of 1/72057590531489792.
@@ -316,7 +318,7 @@ inline static double rng_rand_pu01(rng_stream *s){return rng_rand_pm1(s)*0x1.000
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,1].
  */
-inline static double rng_rand_u01e(rng_stream *s){return rng_rand_m1_24(s)*0x1.000000d10000bp-56;}
+inline static double rng_rand_u01e(_rng_stream *s){return rng_rand_m1_24(s)*0x1.000000d10000bp-56;}
 
 /**
  * @brief Uniform deviate in the interval [0,1], with a non-truncated minimum spacing of 1/18446742278413265569.
@@ -329,7 +331,7 @@ inline static double rng_rand_u01e(rng_stream *s){return rng_rand_m1_24(s)*0x1.0
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,1].
  */
-inline static double rng_rand_u01d(rng_stream *s){return rng_rand_m1(s)*0x1.000001a200020p-64+rng_rand_m1(s)*0x1.000000d10000bp-32;}
+inline static double rng_rand_u01d(_rng_stream *s){return rng_rand_m1(s)*0x1.000001a200020p-64+rng_rand_m1(s)*0x1.000000d10000bp-32;}
 //inline static double rng_rand_u01d(rng_stream *s){return (rng_rand_m1(s)+rng_rand_m1(s)*0x1.000000d10000bp-32)*0x1.000000d10000bp-32;}
 
 /**
@@ -349,7 +351,7 @@ inline static double rng_rand_u01d(rng_stream *s){return rng_rand_m1(s)*0x1.0000
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval [0,1).
  */
-inline static double rng_rand_u01dm(rng_stream *s){int64_t first=rng_rand_m1(s); return rng_rand_m1(s)*(0x1.000001a200020p-64+((__rngstream_m1m2-first)>>63)*0x1.1a200020p-84)+first*0x1.000000d10000bp-32;}
+inline static double rng_rand_u01dm(_rng_stream *s){int64_t first=rng_rand_m1(s); return rng_rand_m1(s)*(0x1.000001a200020p-64+((__rngstream_m1m2-first)>>63)*0x1.1a200020p-84)+first*0x1.000000d10000bp-32;}
 
 /**
  * @brief Uniform deviate in the interval (0,1], with a non-truncated minimum spacing of 1/18446742278413265569.
@@ -361,7 +363,7 @@ inline static double rng_rand_u01dm(rng_stream *s){int64_t first=rng_rand_m1(s);
  * @param s: Handle to rng_stream.
  * @return uniform deviate in the interval (0,1].
  */
-inline static double rng_rand_pu01d(rng_stream *s){return rng_rand_m1(s)*0x1.000001a200020p-64+rng_rand_pm1(s)*0x1.000000d10000bp-32;}
+inline static double rng_rand_pu01d(_rng_stream *s){return rng_rand_m1(s)*0x1.000001a200020p-64+rng_rand_pm1(s)*0x1.000000d10000bp-32;}
 //inline static double rng_rand_pu01d(rng_stream *s){double ret=rng_rand_u01d(s); while(ret==0) ret=rng_rand_u01d(s); return ret;}
 //inline static double rng_rand_pu01d(rng_stream *s){return (rng_rand_m1(s)+rng_rand_pm1(s)*0x1.000000d10000bp-32)*0x1.000000d10000bp-32;}
 
