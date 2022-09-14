@@ -334,11 +334,11 @@ inline static double rng_rand_u01d(rng_stream *s){return rng_rand_m1(s)*0x1.0000
 
 /**
  * @brief Uniform deviate in the interval [0,1), with a minimum spacing of
- * 2^85/2097150.
+ * 2097150/2^85.
  *
  * This function returns a uniform deviate in the interval [0,1). The minimum
- * non-truncated spacing between two distinct values is 2^85/2097150, used only
- * in the interval [4294967086/4294967087,0), with a non-truncated spacing of
+ * non-truncated spacing between two distinct values is 2097150/2^85, used only
+ * in the interval [4294967086/4294967087,1), with a non-truncated spacing of
  * 1/18446742278413265569 elsewhere.
  * It is a slightly modified version of rng_rand_u01d, where the multiplicating
  * factor for the 2nd order random number is slightly biased down in the
