@@ -1,0 +1,4 @@
+# librngstream
+This library has basically no external dependency. In order to compile it, only GNU Make, a C compiler,
+a linker and  GNU sed are required, such that the repository contains a simple Makefile to generate
+static and/or shared libraries in this directory.
